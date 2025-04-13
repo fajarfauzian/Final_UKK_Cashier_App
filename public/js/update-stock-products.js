@@ -1,18 +1,20 @@
-let currentProductId = null;
+let currentProductId;
 
-function openStockModal(productId, currentStock, productName) {
-    currentProductId = productId;
-    document.getElementById('updateStockForm').action = 'products/' + productId + '/save-stock';
-    document.getElementById('stockInput').value = currentStock;
-    document.getElementById('productName').textContent = productName;
-    document.getElementById('updateStockModal').classList.remove('hidden');
+function openStockModal(id, stock, name) {
+    currentProductId = id;
+    const form = document.getElementById("updateStockForm");
+    form.action = `products/${id}/save-stock`;
+    document.getElementById("stockInput").value = stock;
+    document.getElementById("productName").textContent = name;
+
+    const modal = document.getElementById("updateStockModal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
 }
 
 function closeStockModal() {
-    document.getElementById('updateStockModal').classList.add('hidden');
+    const modal = document.getElementById("updateStockModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
     currentProductId = null;
 }
-
-document.getElementById('saveStockButton').addEventListener('click', () => {
-    document.getElementById('updateStockForm').submit();
-});

@@ -44,9 +44,11 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    @forelse ($products as $product)
+                    @forelse ($products as $index => $product)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-3 text-sm text-gray-900">{{ $product->id }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900">
+                                {{ $products->firstItem() + $loop->index }}
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     @if ($product->image)
@@ -73,15 +75,10 @@
                                             class="p-1 text-green-600 hover:bg-green-100 rounded">
                                             Stock
                                         </button>
-                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST"
-                                            class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="p-1 text-red-600 hover:bg-red-100 rounded"
-                                                onclick="return confirm('Yakin ingin menghapus?')">
-                                                Delete
-                                            </button>
-                                        </form>
+                                        <button type="button" class="p-1 text-red-600 hover:bg-red-100 rounded"
+                                            onclick="confirmDelete({{ $product->id }})">
+                                            Delete
+                                        </button>
                                     </div>
                                 @else
                                     <span class="text-gray-400 text-sm">-</span>
@@ -122,4 +119,33 @@
         </div>
     </div>
     @include('products.update-stock')
+
+    {{-- Form untuk delete produk --}}
+    <form id="delete-product-form" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+    </form>
+
+    @section('scripts')
+        <script>
+            function confirmDelete(productId) {
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: "Produk ini akan dihapus secara permanen!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const form = document.getElementById('delete-product-form');
+                        form.action = '{{ url('products') }}/' + productId;
+                        form.submit();
+                    }
+                });
+            }
+        </script>
+    @endsection
 @endsection
