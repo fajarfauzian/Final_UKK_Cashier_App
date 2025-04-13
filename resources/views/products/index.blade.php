@@ -72,11 +72,12 @@
                                         </a>
                                         <button
                                             onclick="openStockModal({{ $product->id }}, {{ $product->stock }}, '{{ $product->name }}')"
-                                            class="p-1 text-green-600 hover:bg-green-100 rounded">
-                                            Stock
+                                            class="p-1.5 text-green-600 hover:bg-green-100 rounded-full"
+                                            title="Update Stock">
+                                            Update
                                         </button>
-                                        <button type="button" class="p-1 text-red-600 hover:bg-red-100 rounded"
-                                            onclick="confirmDelete({{ $product->id }})">
+                                        <button onclick="openDeleteModal({{ $product->id }}, '{{ $product->name }}')"
+                                            class="p-1.5 text-red-600 hover:bg-red-100 rounded-full" title="Delete Product">
                                             Delete
                                         </button>
                                     </div>
@@ -118,34 +119,8 @@
             </div>
         </div>
     </div>
-    @include('products.update-stock')
-
-    {{-- Form untuk delete produk --}}
-    <form id="delete-product-form" method="POST" style="display: none;">
-        @csrf
-        @method('DELETE')
-    </form>
-
-    @section('scripts')
-        <script>
-            function confirmDelete(productId) {
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: "Produk ini akan dihapus secara permanen!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const form = document.getElementById('delete-product-form');
-                        form.action = '{{ url('products') }}/' + productId;
-                        form.submit();
-                    }
-                });
-            }
-        </script>
-    @endsection
+    @if (Auth::user()->role == 'admin')
+        @include('components.update-stock')
+        @include('components.delete')
+    @endif
 @endsection

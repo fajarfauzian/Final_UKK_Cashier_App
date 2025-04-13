@@ -1,20 +1,19 @@
-let currentProductId;
+// Remove the let declaration here
+currentProductId = null;
 
-function openStockModal(id, stock, name) {
-    currentProductId = id;
-    const form = document.getElementById("updateStockForm");
-    form.action = `products/${id}/save-stock`;
-    document.getElementById("stockInput").value = stock;
-    document.getElementById("productName").textContent = name;
-
-    const modal = document.getElementById("updateStockModal");
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
+function openStockModal(productId, currentStock, productName) {
+    currentProductId = productId;
+    document.getElementById('updateStockForm').action = 'products/' + productId + '/save-stock';
+    document.getElementById('stockInput').value = currentStock;
+    document.getElementById('productName').textContent = productName;
+    document.getElementById('updateStockModal').classList.remove('hidden');
 }
 
 function closeStockModal() {
-    const modal = document.getElementById("updateStockModal");
-    modal.classList.add("hidden");
-    modal.classList.remove("flex");
+    document.getElementById('updateStockModal').classList.add('hidden');
     currentProductId = null;
 }
+
+document.getElementById('saveStockButton').addEventListener('click', () => {
+    document.getElementById('updateStockForm').submit();
+});
