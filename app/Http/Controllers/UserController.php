@@ -2,36 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User; // Mengimpor model User untuk mengakses dan memanipulasi data di tabel 'users'
-use Illuminate\Http\Request; // Mengimpor kelas Request untuk menangani data yang dikirim melalui HTTP request (GET/POST)
-use Illuminate\Support\Facades\Hash; // Mengimpor facade Hash untuk mengenkripsi password sebelum disimpan ke database
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     /**
-     * Tampilkan daftar user.
-     * 
-     * Method ini menampilkan daftar pengguna dengan fitur pencarian dan paginasi.
-     * Parameter $request berisi data dari query string (misalnya ?search=keyword&per_page=10)
+     * Menampilkan daftar user dengan fitur pencarian dan paginasi.
      */
     public function index(Request $request)
     {
         $users = User::query()
-            ->when($request->search, function ($query) use ($request) {
-                return $query->where('name', 'like', '%' . $request->search . '%') // Mencari berdasarkan nama
-                    ->orWhere('email', 'like', '%' . $request->search . '%'); // Atau berdasarkan email
-            })
+            ->when($request->search, fn($query) => $query->where('name', 'like', "%{$request->search}%")
+                                                        ->orWhere('email', 'like', "%{$request->search}%"))
             ->paginate($request->per_page ?? 10);
 
-        $startNumber = $users->firstItem();
-
-        return view('users.index', compact('users', 'startNumber'));
+        return view('users.index', [
+            'users' => $users,
+            'startNumber' => $users->firstItem()
+        ]);
     }
 
     /**
-     * Tampilkan form untuk menambah user baru.
-     * 
-     * Method ini hanya menampilkan form kosong untuk membuat pengguna baru.
+     * Menampilkan form untuk menambah user baru.
      */
     public function create()
     {
@@ -39,33 +33,27 @@ class UserController extends Controller
     }
 
     /**
-     * Simpan user baru ke database.
-     * 
-     * Method ini memproses data dari form create dan menyimpan pengguna baru.
-     * Parameter $request berisi data dari form yang dikirim via POST
+     * Menyimpan user baru ke database.
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255', // Nama wajib, harus string, maksimum 255 karakter
-            'email' => 'required|email|unique:users,email', // Email wajib, harus format email, unik di tabel 'users' kolom 'email'
-            'password' => 'required|confirmed', // Password wajib, harus dikonfirmasi (ada field password_confirmation)
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|confirmed',
         ]);
 
         User::create([
-            'name' => $request->name, // Nama dari input form
-            'email' => $request->email, // Email dari input form
-            'password' => Hash::make($request->password), // Password dienkripsi
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
         ]);
 
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
     }
 
     /**
-     * Tampilkan form edit user.
-     * 
-     * Method ini menampilkan form untuk mengedit data pengguna yang ada.
-     * Parameter $user adalah instance User yang di-inject via route model binding
+     * Menampilkan form edit user.
      */
     public function edit(User $user)
     {
@@ -73,30 +61,28 @@ class UserController extends Controller
     }
 
     /**
-     * Update user di database.
-     * 
-     * Method ini memproses data dari form edit dan memperbarui data pengguna.
-     * Parameter $request berisi data dari form, $user adalah instance User yang akan diubah
+     * Memperbarui data user di database.
      */
     public function update(Request $request, User $user)
     {
         $rules = [
-            'name' => 'required|string|max:255', // Nama wajib, string, maks 255 karakter
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'name' => 'required|string|max:255',
+            'email' => "required|email|unique:users,email,{$user->id}",
         ];
 
         if ($request->filled('password')) {
-            $rules['password'] = 'required|confirmed'; // Password wajib dan harus dikonfirmasi
+            $rules['password'] = 'required|confirmed';
         }
 
-        $request->validate($rules);
+        $validated = $request->validate($rules);
+        
         $updateData = [
-            'name' => $request->name, // Nama baru dari input
-            'email' => $request->email, // Email baru dari input
+            'name' => $validated['name'],
+            'email' => $validated['email'],
         ];
 
         if ($request->filled('password')) {
-            $updateData['password'] = Hash::make($request->password);
+            $updateData['password'] = Hash::make($validated['password']);
         }
 
         $user->update($updateData);
@@ -105,15 +91,11 @@ class UserController extends Controller
     }
 
     /**
-     * Hapus user dari database.
-     * 
-     * Method ini menghapus pengguna tertentu dari tabel 'users'.
-     * Parameter $user adalah instance User yang di-inject via route model binding
+     * Menghapus user dari database.
      */
     public function destroy(User $user)
     {
         $user->forceDelete();
-
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
     }
 }

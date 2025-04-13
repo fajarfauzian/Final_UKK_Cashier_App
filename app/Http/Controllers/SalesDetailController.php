@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sale; // Mengimpor model Sale untuk mengakses data penjualan di tabel 'sales'
-use App\Models\SalesDetail; // Mengimpor model SalesDetail untuk mengelola detail penjualan di tabel 'sales_details'
-use App\Models\Product; // Mengimpor model Product untuk mengakses dan memanipulasi data produk di tabel 'products'
-use Illuminate\Http\Request; // Mengimpor kelas Request untuk menangani data yang dikirim melalui HTTP request (GET/POST)
+use App\Models\Sale;
+use App\Models\SalesDetail;
+use App\Models\Product;
+use Illuminate\Http\Request;
 
 class SalesDetailController extends Controller
 {
     public function showDetails(Sale $sale)
     {
         $details = $sale->salesDetails()->with('product')->get();
-
         return view('sales.details', compact('sale', 'details'));
     }
 

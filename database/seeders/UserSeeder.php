@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Administrator', // Nama pengguna yang akan dibuat, dalam hal ini 'Administrator'
             'email' => 'admin@gmail.com', // Alamat email pengguna, digunakan untuk login
-            'password' => Hash::make('admin123'), // Kata sandi yang dienkripsi menggunakan Hash::make untuk keamanan
+            'password' => Hash::make('1234'), // Kata sandi yang dienkripsi menggunakan Hash::make untuk keamanan
             'role' => 'admin', // Peran pengguna, dalam hal ini 'admin' untuk menunjukkan hak akses penuh
         ]);
     }

@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sale; // Mengimpor model Sale untuk mengakses dan memanipulasi data di tabel 'sales' di database
-use App\Models\SalesDetail; // Mengimpor model SalesDetail untuk mengelola detail penjualan (produk yang dibeli) di tabel 'sales_details'
-use App\Models\Product; // Mengimpor model Product untuk mengakses data produk seperti nama, harga, dan stok di tabel 'products'
-use App\Models\User; // Mengimpor model User untuk mengakses data pengguna (misalnya kasir atau admin) di tabel 'users'
-use Illuminate\Http\Request; // Mengimpor kelas Request untuk menangani data yang dikirim melalui HTTP request (GET/POST)
-use App\Exports\SalesExport; // Mengimpor kelas SalesExport yang merupakan implementasi ekspor data penjualan ke Excel
-use Maatwebsite\Excel\Facades\Excel; // Mengimpor facade Excel dari package Maatwebsite untuk mempermudah ekspor data ke file Excel
-use Barryvdh\DomPDF\Facade\Pdf as PDF; // Mengimpor facade PDF dari package DomPDF untuk menghasilkan dokumen PDF seperti struk penjualan
-use Illuminate\Support\Facades\Log; // Import the Log facade
+use App\Models\Sale;
+use App\Models\SalesDetail;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Exports\SalesExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Illuminate\Support\Facades\Log;
 
 class SaleController extends Controller
 {
@@ -23,19 +23,15 @@ class SaleController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
-                    ->orWhere('customer_name', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    })
-                    ->orWhere('total_price', 'like', "%{$search}%")
-                    ->orWhere('created_at', 'like', "%{$search}%");
+                  ->orWhere('customer_name', 'like', "%{$search}%")
+                  ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"))
+                  ->orWhere('total_price', 'like', "%{$search}%")
+                  ->orWhere('created_at', 'like', "%{$search}%");
             });
         }
 
         $sales = $query->paginate($perPage);
-
-        $currentPage = $sales->currentPage();
-        $startNumber = ($currentPage - 1) * $perPage + 1;
+        $startNumber = ($sales->currentPage() - 1) * $perPage + 1;
 
         return view('sales.index', compact('sales', 'startNumber'));
     }
@@ -43,9 +39,7 @@ class SaleController extends Controller
     public function details($id)
     {
         $sale = Sale::with(['user', 'details.product'])->findOrFail($id);
-        $details = $sale->details;
-
-        return view('sales.details', compact('sale', 'details'));
+        return view('sales.details', ['sale' => $sale, 'details' => $sale->details]);
     }
 
     public function getSoldAttribute()
@@ -58,43 +52,35 @@ class SaleController extends Controller
         $products = Product::withSum('salesDetails as sold', 'quantity')
             ->where('stock', '>', 0)
             ->get()
-            ->map(function ($product) {
-                $product->quantity = 1; // Menetapkan quantity default untuk form
-                return $product;
-            });
+            ->map(fn($product) => tap($product, function($p) { $p->quantity = 1; }));
 
-        $users = User::all();
-
-        return view('sales.create', compact('products', 'users'));
+        return view('sales.create', [
+            'products' => $products,
+            'users' => User::all()
+        ]);
     }
 
     public function generatePdf($id)
     {
         $sale = Sale::with(['salesDetails.product', 'user'])->findOrFail($id);
 
-        $selectedProducts = $sale->salesDetails->map(function ($detail) {
-            return (object)[
+        $data = [
+            'sale' => $sale,
+            'selectedProducts' => $sale->salesDetails->map(fn($detail) => (object)[
                 'name' => $detail->product->name ?? 'Unknown Product',
                 'price' => $detail->unit_price,
                 'quantity' => $detail->quantity,
                 'subtotal' => $detail->unit_price * $detail->quantity
-            ];
-        });
+            ]),
+            'totalPrice' => $sale->total_price,
+            'amountPaid' => $sale->amount_paid,
+            'change' => $sale->change,
+            'is_member' => $sale->is_member,
+            'customerName' => $sale->customer_name ?? 'Guest',
+            'phone' => $sale->phone
+        ];
 
-        $totalPrice = $sale->total_price; // Total harga setelah diskon (jika ada)
-        $amountPaid = $sale->amount_paid; // Jumlah yang dibayar oleh pelanggan
-        $change = $sale->change; // Kembalian yang diberikan
-        $is_member = $sale->is_member; // Status membership pelanggan (true/false)
-        $customerName = $sale->customer_name ?? 'Guest'; // Nama pelanggan, default 'Guest' jika null
-        $phone = $sale->phone; // Nomor telepon pelanggan, bisa null
-
-        $pdf = PDF::loadView('sales.receipt_pdf', compact(
-            'sale', 'selectedProducts', 'totalPrice', 'amountPaid', 'change', 'is_member', 'customerName', 'phone'
-        ));
-
-        // Mengatur ukuran kertas PDF ke A4 dengan orientasi portrait (tegak)
-        $pdf->setPaper('a4', 'portrait');
-
+        $pdf = PDF::loadView('sales.receipt_pdf', $data)->setPaper('a4', 'portrait');
         return $pdf->download('struk_penjualan_' . $id . '.pdf');
     }
 
@@ -107,10 +93,10 @@ class SaleController extends Controller
     public function checkMembership(Request $request)
     {
         $validated = $request->validate([
-            'products' => 'required|array', // Array ID produk wajib ada
-            'products.*' => 'exists:products,id', // Setiap ID harus ada di tabel 'products'
-            'quantities' => 'required|array', // Array kuantitas wajib ada
-            'quantities.*' => 'integer|min:0', // Setiap kuantitas harus integer dan minimal 0
+            'products' => 'required|array',
+            'products.*' => 'exists:products,id',
+            'quantities' => 'required|array',
+            'quantities.*' => 'integer|min:0',
         ]);
 
         $selectedProducts = Product::whereIn('id', $validated['products'])->get();
@@ -120,10 +106,7 @@ class SaleController extends Controller
 
         foreach ($selectedProducts as $index => $product) {
             $quantity = $quantities[$index] ?? 0;
-
-            if ($quantity > 0) {
-                $hasQuantity = true;
-            }
+            $hasQuantity = $hasQuantity || $quantity > 0;
 
             if ($quantity > 0 && $product->stock < $quantity) {
                 return back()->withErrors([
@@ -131,50 +114,28 @@ class SaleController extends Controller
                 ])->withInput();
             }
 
-            $subtotal = $product->price * $quantity;
-
-            $totalPrice += $subtotal;
+            $totalPrice += $product->price * $quantity;
         }
 
         if (!$hasQuantity) {
             return back()->withErrors([
-                'quantity' => 'Harap pilih setidaknya satu produk dengan kuantitas lebih dari 0 sebelum melanjutkan transaksi.'
+                'quantity' => 'Harap pilih setidaknya satu produk dengan kuantitas lebih dari 0.'
             ])->withInput();
         }
 
-        return view('sales.member', [
-            'selectedProducts' => $selectedProducts,
-            'quantities' => $quantities,
-            'totalPrice' => $totalPrice,
-        ]);
+        return view('sales.member', compact('selectedProducts', 'quantities', 'totalPrice'));
     }
 
     public function processMember(Request $request)
     {
-        $validated = $request->validate([
-            'products' => 'required|array',
-            'products.*' => 'exists:products,id',
-            'quantities' => 'required|array',
-            'quantities.*' => 'integer|min:0',
-            'phone' => 'required|string|max:15',
-            'is_member' => 'required|boolean',
-            'user_id' => 'required|exists:users,id',
-            'amount_paid' => 'required|numeric|min:0',
-        ]);
-
+        $validated = $this->validateProductSelection($request);
+        
         $products = Product::whereIn('id', $validated['products'])->get();
         $quantities = $validated['quantities'];
-        $totalPrice = 0;
-
-        foreach ($products as $index => $product) {
-            $quantity = $quantities[$index];
-            $totalPrice += $product->price * $quantity;
-        }
-
+        $totalPrice = $this->calculateTotalPrice($products, $quantities);
         $amountPaid = $validated['amount_paid'];
-        $change = $amountPaid - $totalPrice;
-
-        if ($change < 0) {
+        
+        if ($amountPaid < $totalPrice) {
             return redirect()->route('sales.create')
                 ->withErrors(['amount_paid' => 'Jumlah yang dibayar tidak mencukupi total harga.'])
                 ->withInput();
@@ -182,16 +143,14 @@ class SaleController extends Controller
 
         $previousPurchase = false;
         if ($request->has('customer_name') && $request->input('customer_name')) {
-            $previousPurchase = Sale::whereRaw('LOWER(customer_name) = ?', [strtolower($request->input('customer_name'))])
-                ->where('is_member', true)
-                ->exists();
+            $previousPurchase = $this->checkPreviousPurchase($request->input('customer_name'));
         }
 
         return view('sales.process', [
             'products' => $products,
             'quantities' => $quantities,
             'phone' => $validated['phone'],
-            'amount_paid' => $validated['amount_paid'],
+            'amount_paid' => $amountPaid,
             'totalPrice' => $totalPrice,
             'previousPurchase' => $previousPurchase,
         ]);
@@ -199,35 +158,16 @@ class SaleController extends Controller
 
     public function processTransaction(Request $request)
     {
-        $validated = $request->validate([
-            'products' => 'required|array',
-            'products.*' => 'exists:products,id',
-            'quantities' => 'required|array',
-            'quantities.*' => 'integer|min:0',
-            'is_member' => 'required|boolean',
-            'user_id' => 'required|exists:users,id',
-            'customer_name' => 'required|string|max:255',
-            'use_points' => 'required|boolean',
-            'phone' => 'nullable|string|max:15',
-            'amount_paid' => 'required|numeric|min:0',
-        ]);
-
+        $validated = $this->validateTransactionRequest($request);
+        
         $products = Product::whereIn('id', $validated['products'])->get();
         $quantities = $validated['quantities'];
-        $totalPrice = 0;
-
-        foreach ($products as $index => $product) {
-            $quantity = $quantities[$index];
-            $totalPrice += $product->price * $quantity;
-        }
-
+        $totalPrice = $this->calculateTotalPrice($products, $quantities);
+        
         $isMember = (bool) $validated['is_member'];
         $usePoints = (bool) $validated['use_points'];
-
-        $previousPurchase = Sale::whereRaw('LOWER(customer_name) = ?', [strtolower($validated['customer_name'])])
-            ->where('is_member', true)
-            ->exists();
-
+        $previousPurchase = $this->checkPreviousPurchase($validated['customer_name']);
+        
         $finalPrice = ($isMember && $usePoints && $previousPurchase) ? $totalPrice * 0.9 : $totalPrice;
         $amountPaid = $validated['amount_paid'];
         $change = $amountPaid - $finalPrice;
@@ -238,30 +178,8 @@ class SaleController extends Controller
                 ->withInput();
         }
 
-        $sale = Sale::create([
-            'user_id' => $validated['user_id'],
-            'total_price' => $finalPrice,
-            'amount_paid' => $amountPaid,
-            'change' => $change,
-            'is_member' => $isMember,
-            'phone' => $validated['phone'],
-            'customer_name' => $validated['customer_name'],
-            'use_points' => $usePoints,
-        ]);
-
-        foreach ($products as $index => $product) {
-            $quantity = $quantities[$index];
-            if ($quantity > 0) {
-                SalesDetail::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $product->id,
-                    'unit_price' => $product->price,
-                    'quantity' => $quantity,
-                    'subtotal' => $product->price * $quantity,
-                ]);
-                $product->decrement('stock', $quantity);
-            }
-        }
+        $sale = $this->createSale($validated, $finalPrice, $amountPaid, $change);
+        $this->createSalesDetails($sale, $products, $quantities);
 
         $selectedProducts = $products->map(function ($product, $index) use ($quantities) {
             $product->quantity = $quantities[$index];
@@ -283,43 +201,25 @@ class SaleController extends Controller
     {
         try {
             $customerName = $request->input('customer_name');
-            $hasPreviousPurchase = false;
+            $hasPreviousPurchase = $customerName ? $this->checkPreviousPurchase($customerName) : false;
 
-            if ($customerName) {
-                $hasPreviousPurchase = Sale::whereRaw('LOWER(customer_name) = ?', [strtolower($customerName)])
-                    ->where('is_member', true)
-                    ->exists();
-            }
-
-            return response()->json([
-                'hasPreviousPurchase' => $hasPreviousPurchase,
-            ]);
+            return response()->json(['hasPreviousPurchase' => $hasPreviousPurchase]);
         } catch (\Exception $e) {
             Log::error('Error in checkMembershipStatus: ' . $e->getMessage());
             return response()->json([
-                'error' => 'Terjadi kesalahan saat memeriksa status poin: ' . $e->getMessage(),
+                'error' => 'Terjadi kesalahan saat memeriksa status poin: ' . $e->getMessage()
             ], 500);
         }
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id', // ID pengguna wajib dan harus ada
-            'is_member' => 'required|boolean', // Status member wajib
-            'products' => 'required|array', // Array ID produk wajib
-            'products.*' => 'exists:products,id', // Setiap ID harus ada di tabel 'products'
-            'quantities' => 'required|array', // Array kuantitas wajib
-            'quantities.*' => 'integer|min:1', // Setiap kuantitas harus integer >= 1
-            'customer_name' => 'required|string|max:255', // Nama pelanggan wajib, maks 255 karakter
-            'use_points' => 'required|boolean', // Penggunaan poin wajib
-            'amount_paid' => 'required|numeric|min:0', // Jumlah dibayar wajib, numerik >= 0
-        ]);
-
+        $validated = $this->validateTransactionRequest($request);
+        
         $products = Product::whereIn('id', $validated['products'])->get();
         $quantities = $validated['quantities'];
-        $totalPrice = 0;
-
+        
+        // Periksa stok
         foreach ($products as $index => $product) {
             $quantity = $quantities[$index];
             if ($product->stock < $quantity) {
@@ -327,9 +227,9 @@ class SaleController extends Controller
                     'stock' => "Stok produk {$product->name} tidak mencukupi."
                 ])->withInput();
             }
-            $totalPrice += $product->price * $quantity;
         }
 
+        $totalPrice = $this->calculateTotalPrice($products, $quantities);
         $finalPrice = $validated['is_member'] ? $totalPrice * 0.9 : $totalPrice;
         $change = $validated['amount_paid'] - $finalPrice;
 
@@ -340,28 +240,8 @@ class SaleController extends Controller
         }
 
         try {
-            $sale = Sale::create([
-                'user_id' => $validated['user_id'],
-                'total_price' => $finalPrice,
-                'amount_paid' => $validated['amount_paid'],
-                'change' => $change,
-                'is_member' => $validated['is_member'],
-                'phone' => $request->input('phone'), // Nomor telepon opsional dari input
-                'customer_name' => $validated['customer_name'],
-                'use_points' => $validated['use_points'],
-            ]);
-
-            foreach ($products as $index => $product) {
-                $quantity = $quantities[$index];
-                SalesDetail::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $product->id,
-                    'unit_price' => $product->price,
-                    'quantity' => $quantity,
-                    'subtotal' => $product->price * $quantity,
-                ]);
-                $product->decrement('stock', $quantity);
-            }
+            $sale = $this->createSale($validated, $finalPrice, $validated['amount_paid'], $change);
+            $this->createSalesDetails($sale, $products, $quantities);
 
             return redirect()->route('sales.index')
                 ->with('success', 'Transaksi berhasil disimpan');
@@ -387,9 +267,10 @@ class SaleController extends Controller
     {
         try {
             foreach ($sale->salesDetails as $detail) {
-                Product::where('id', 'detail->product_id')
-                    ->increment('stock', $detail->quantity); // Tambah stok kembali
+                Product::where('id', $detail->product_id)
+                    ->increment('stock', $detail->quantity);
             }
+            
             $sale->salesDetails()->delete();
             $sale->delete();
 
@@ -398,6 +279,85 @@ class SaleController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('sales.index')
                 ->with('error', 'Gagal menghapus penjualan: ' . $e->getMessage());
+        }
+    }
+
+    // Helper methods
+    private function validateProductSelection(Request $request)
+    {
+        return $request->validate([
+            'products' => 'required|array',
+            'products.*' => 'exists:products,id',
+            'quantities' => 'required|array',
+            'quantities.*' => 'integer|min:0',
+            'phone' => 'required|string|max:15',
+            'is_member' => 'required|boolean',
+            'user_id' => 'required|exists:users,id',
+            'amount_paid' => 'required|numeric|min:0',
+        ]);
+    }
+
+    private function validateTransactionRequest(Request $request)
+    {
+        return $request->validate([
+            'products' => 'required|array',
+            'products.*' => 'exists:products,id',
+            'quantities' => 'required|array',
+            'quantities.*' => 'integer|min:0',
+            'is_member' => 'required|boolean',
+            'user_id' => 'required|exists:users,id',
+            'customer_name' => 'required|string|max:255',
+            'use_points' => 'required|boolean',
+            'phone' => 'nullable|string|max:15',
+            'amount_paid' => 'required|numeric|min:0',
+        ]);
+    }
+
+    private function calculateTotalPrice($products, $quantities)
+    {
+        $totalPrice = 0;
+        foreach ($products as $index => $product) {
+            $quantity = $quantities[$index] ?? 0;
+            $totalPrice += $product->price * $quantity;
+        }
+        return $totalPrice;
+    }
+
+    private function checkPreviousPurchase($customerName)
+    {
+        return Sale::whereRaw('LOWER(customer_name) = ?', [strtolower($customerName)])
+            ->where('is_member', true)
+            ->exists();
+    }
+
+    private function createSale($data, $finalPrice, $amountPaid, $change)
+    {
+        return Sale::create([
+            'user_id' => $data['user_id'],
+            'total_price' => $finalPrice,
+            'amount_paid' => $amountPaid,
+            'change' => $change,
+            'is_member' => $data['is_member'],
+            'phone' => $data['phone'] ?? null,
+            'customer_name' => $data['customer_name'],
+            'use_points' => $data['use_points'],
+        ]);
+    }
+
+    private function createSalesDetails($sale, $products, $quantities)
+    {
+        foreach ($products as $index => $product) {
+            $quantity = $quantities[$index] ?? 0;
+            if ($quantity > 0) {
+                SalesDetail::create([
+                    'sale_id' => $sale->id,
+                    'product_id' => $product->id,
+                    'unit_price' => $product->price,
+                    'quantity' => $quantity,
+                    'subtotal' => $product->price * $quantity,
+                ]);
+                $product->decrement('stock', $quantity);
+            }
         }
     }
 }

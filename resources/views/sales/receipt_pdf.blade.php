@@ -100,7 +100,7 @@
 <body>
     <div class="container">
         <!-- Header -->
-        <div class="header">
+        <div class="header">z
             <h1>Struk Penjualan</h1>
             <p>Tanggal: {{ $sale->created_at ? date('d F Y H:i', strtotime($sale->created_at)) : 'N/A' }}</p>
             <p>No. Transaksi: {{ str_pad($sale->id, 6, '0', STR_PAD_LEFT) }}</p>
