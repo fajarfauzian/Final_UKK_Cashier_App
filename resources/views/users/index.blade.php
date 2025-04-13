@@ -48,7 +48,7 @@
                                     <a href="{{ route('users.edit', $user->id) }}"
                                         class="text-blue-600 hover:underline">Edit</a>
                                     <button onclick="openModal({{ $user->id }})"
-                                        class="text-red-600 hover:underline">Hapus</button>
+                                        class="text-red-600 hover:underline">Delete</button>
                                 </div>
 
                                 <!-- Delete Modal -->
