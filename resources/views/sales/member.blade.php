@@ -100,7 +100,7 @@
                     <input type="hidden" name="use_points" value="0">
 
                     <button type="submit"
-                        class="w-full bg-blue-600 text-white py-3 rounded-full hover:bg-blue-700 font-semibold">Pesan</button>
+                        class="w-full bg-blue-600 text-white py-3 mb-3 rounded-full hover:bg-blue-700 font-semibold">Pesan</button>
                     <a href="{{ route('sales.create') }}"
                         class="block w-full bg-gray-200 text-gray-700 py-3 rounded-full hover:bg-gray-300 font-semibold text-center">Kembali</a>
                 </div>
