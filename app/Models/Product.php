@@ -1,28 +1,28 @@
 <?php
 
-// namespace App\Models;
+namespace App\Models;
 
-// use Illuminate\Database\Eloquent\Factories\HasFactory;
-// use Illuminate\Database\Eloquent\Model;
-// use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-// class Product extends Model
-// {
-//     use HasFactory, SoftDeletes;
+class Product extends Model
+{
+    use HasFactory, SoftDeletes;
 
-//     protected $fillable = [
-//         'name',
-//         'price',
-//         'stock',
-//         'image'
-//     ];
+    protected $fillable = [
+        'name',
+        'price',
+        'stock',
+        'image'
+    ];
 
-//     protected $casts = [
-//         'price' => 'decimal:2'
-//     ];
+    protected $casts = [
+        'price' => 'decimal:2'
+    ];
 
-//     public function salesDetails()
-//     {
-//         return $this->hasMany(SalesDetail::class);
-//     }
-// }
+    public function salesDetails()
+    {
+        return $this->hasMany(SalesDetail::class);
+    }
+}
