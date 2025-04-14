@@ -67,7 +67,7 @@ class ProductController extends Controller
 
     public function editStock($id)
     {
-        return view('products.update-stock', ['product' => Product::findOrFail($id)]);
+        return view('components.update-stock', ['product' => Product::findOrFail($id)]);
     }
 
     public function updateStock(Request $request, $id)
