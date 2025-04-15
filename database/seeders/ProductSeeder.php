@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 
 class ProductSeeder extends Seeder
 {
+        // (opsional)
     public function run(): void
     {
         $products = [

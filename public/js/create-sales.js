@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Update totals on page load
     updateTotals();
 });
 

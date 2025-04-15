@@ -14,37 +14,46 @@ use Illuminate\Support\Facades\Log;
 
 class SaleController extends Controller
 {
+
     public function index(Request $request)
-    {
-        $perPage = $request->query('per_page', 10);
-        $search = $request->query('search');
-        $query = Sale::with(['user', 'salesDetails.product'])->orderBy('id', 'desc');
+{
+    $perPage = $request->query('per_page', 10);
+    $search = $request->query('search');
+    $query = Sale::with(['user', 'salesDetails.product'])->orderBy('id', 'desc');
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"))
-                  ->orWhere('total_price', 'like', "%{$search}%")
-                  ->orWhere('created_at', 'like', "%{$search}%");
-            });
-        }
-
-        $sales = $query->paginate($perPage);
-        $startNumber = ($sales->currentPage() - 1) * $perPage + 1;
-
-        return view('sales.index', compact('sales', 'startNumber'));
+    if ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('id', 'like', "%{$search}%")
+              ->orWhere('customer_name', 'like', "%{$search}%")
+              ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"))
+              ->orWhere('total_price', 'like', "%{$search}%")
+              ->orWhere('created_at', 'like', "%{$search}%");
+        });
     }
+
+    $dailySales = Sale::whereDate('created_at', today())->count();
+    $memberSales = Sale::whereDate('created_at', today())
+        ->where('is_member', true)
+        ->get();
+    $nonMemberSales = Sale::whereDate('created_at', today())
+        ->where('is_member', false)
+        ->get();
+
+    $sales = $query->paginate($perPage);
+    $startNumber = ($sales->currentPage() - 1) * $perPage + 1;
+
+    // Perbaiki view untuk mengarah ke sales.index
+    return view('sales.index', compact('sales', 'startNumber', 'dailySales', 'memberSales', 'nonMemberSales'));
+}
+
+
+
+
 
     public function details($id)
     {
         $sale = Sale::with(['user', 'details.product'])->findOrFail($id);
         return view('sales.details', ['sale' => $sale, 'details' => $sale->details]);
-    }
-
-    public function getSoldAttribute()
-    {
-        return $this->hasMany(SalesDetail::class)->sum('quantity');
     }
 
     public function create()
@@ -129,12 +138,12 @@ class SaleController extends Controller
     public function processMember(Request $request)
     {
         $validated = $this->validateProductSelection($request);
-        
+
         $products = Product::whereIn('id', $validated['products'])->get();
         $quantities = $validated['quantities'];
         $totalPrice = $this->calculateTotalPrice($products, $quantities);
         $amountPaid = $validated['amount_paid'];
-        
+
         if ($amountPaid < $totalPrice) {
             return redirect()->route('sales.create')
                 ->withErrors(['amount_paid' => 'Jumlah yang dibayar tidak mencukupi total harga.'])
@@ -159,15 +168,15 @@ class SaleController extends Controller
     public function processTransaction(Request $request)
     {
         $validated = $this->validateTransactionRequest($request);
-        
+
         $products = Product::whereIn('id', $validated['products'])->get();
         $quantities = $validated['quantities'];
         $totalPrice = $this->calculateTotalPrice($products, $quantities);
-        
+
         $isMember = (bool) $validated['is_member'];
         $usePoints = (bool) $validated['use_points'];
         $previousPurchase = $this->checkPreviousPurchase($validated['customer_name']);
-        
+
         $finalPrice = ($isMember && $usePoints && $previousPurchase) ? $totalPrice * 0.9 : $totalPrice;
         $amountPaid = $validated['amount_paid'];
         $change = $amountPaid - $finalPrice;
@@ -215,10 +224,10 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validateTransactionRequest($request);
-        
+
         $products = Product::whereIn('id', $validated['products'])->get();
         $quantities = $validated['quantities'];
-        
+
         // Periksa stok
         foreach ($products as $index => $product) {
             $quantity = $quantities[$index];
@@ -270,7 +279,7 @@ class SaleController extends Controller
                 Product::where('id', $detail->product_id)
                     ->increment('stock', $detail->quantity);
             }
-            
+
             $sale->salesDetails()->delete();
             $sale->delete();
 
@@ -282,7 +291,8 @@ class SaleController extends Controller
         }
     }
 
-    // Helper methods
+
+
     private function validateProductSelection(Request $request)
     {
         return $request->validate([
@@ -312,6 +322,7 @@ class SaleController extends Controller
             'amount_paid' => 'required|numeric|min:0',
         ]);
     }
+
 
     private function calculateTotalPrice($products, $quantities)
     {

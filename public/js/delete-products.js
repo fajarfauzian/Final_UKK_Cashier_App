@@ -12,8 +12,8 @@ function closeDeleteModal() {
 }
 
 function deleteProduct() {
-    if (!currentProductId) return;    
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');    
+    if (!currentProductId) return;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     fetch(`/products/${currentProductId}`, {
         method: 'DELETE',
         headers: {
@@ -21,6 +21,7 @@ function deleteProduct() {
             'Accept': 'application/json'
         }
     })
+    
     .then(response => {
         if (response.ok) {
             closeDeleteModal();

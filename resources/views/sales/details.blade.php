@@ -37,12 +37,12 @@
                     <tr>
                         <th class="p-2 text-left">Produk</th>
                         <th class="p-2 text-right">Harga</th>
-                        <th class="p-2 text-center">Jml</th>
+                        <th class="p-2 text-center">Jumlah</th>
                         <th class="p-2 text-right">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($details as $detail)
+                    @forelse($details as $detail)
                         <tr class="border-b">
                             <td class="p-2">{{ $detail->product?->name ?? 'Product Not Found' }}</td>
                             <td class="p-2 text-right">Rp{{ number_format($detail->unit_price, 0, ',', '.') }}</td>

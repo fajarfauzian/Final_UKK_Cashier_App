@@ -1,4 +1,3 @@
-// Remove the let declaration here
 currentProductId = null;
 
 function openStockModal(productId, currentStock, productName) {

@@ -32,7 +32,7 @@
                         <tr>
                             <th class="p-2 text-left">Produk</th>
                             <th class="p-2 text-left">Harga</th>
-                            <th class="p-2 text-left">Jml</th>
+                            <th class="p-2 text-left">Jumlah</th>
                             <th class="p-2 text-left">Subtotal</th>
                         </tr>
                     </thead>

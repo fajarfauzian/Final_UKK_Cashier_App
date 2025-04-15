@@ -107,6 +107,5 @@
             </form>
         </div>
     </div>
-
     <script src="{{ asset('js/member-sales.js') }}"></script>
 @endsection

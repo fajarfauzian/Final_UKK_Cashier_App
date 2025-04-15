@@ -9,14 +9,12 @@ use App\Http\Controllers\SalesDetailController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SearchController;
 
-// Rute Autentikasi
 Route::controller(AuthController::class)->group(function () {
     Route::get('/login', 'showLoginForm')->name('login')->middleware('guest');
     Route::post('/login', 'login');
     Route::post('/logout', 'logout')->name('logout')->middleware('auth');
 });
 
-// Rute yang Memerlukan Autentikasi
 Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -24,7 +22,7 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('dashboard');
     });
 
-    // Products
+    // Product
     Route::resource('products', ProductController::class);
     Route::controller(ProductController::class)->prefix('products')->group(function () {
         Route::get('/{id}/update-stock', 'editStock')->name('products.updateStock');
@@ -41,7 +39,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/sales/{id}/pdf', 'generatePdf')->name('sales.pdf');
     });
 
-    // Pindahkan route check-membership-status ke luar grup prefix 'sales'
+    // route check-membership-status ke luar grup prefix 'sales'
     Route::post('/sales/check-membership-status', [SaleController::class, 'checkMembershipStatus'])->name('sales.check-membership-status');
 
     // Sales Details

@@ -2,7 +2,7 @@
  document.getElementById('togglePassword').addEventListener('click', function() {
     const password = document.getElementById('password');
     const icon = this.querySelector('i');
-    
+
     if (password.type === 'password') {
         password.type = 'text';
         icon.className = 'ri-eye-off-line';
@@ -12,7 +12,7 @@
     }
 });
 
-// Close error alert
+// Close 
 const closeBtn = document.getElementById('closeError');
 if (closeBtn) {
     closeBtn.addEventListener('click', () => {

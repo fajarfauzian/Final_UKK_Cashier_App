@@ -18,7 +18,6 @@
                             <h3 class="text-lg font-semibold">{{ $product->name }}</h3>
                             <p class="text-gray-600">Rp {{ number_format($product->price, 2) }}</p>
                             <p class="text-gray-600">Stock: {{ $product->stock }}</p>
-                            <a href="{{ route('products.show', $product->id) }}" class="text-blue-600">View</a>
                         </div>
                     @endforeach
                 </div>
@@ -34,10 +33,9 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     @foreach ($sales as $sale)
                         <div class="bg-white p-3 rounded shadow">
-                            <h3 class="text-lg font-semibold">Sale #{{ $sale->id }}</h3>
+                            <h3 class="text-lg font-semibold">Sale {{ $sale->id }}</h3>
                             <p class="text-gray-600">Rp {{ number_format($sale->total_price, 2) }}</p>
                             <p class="text-gray-600">{{ $sale->customer_name ?? 'N/A' }}</p>
-                            <a href="{{ route('sales.show', $sale->id) }}" class="text-blue-600">View</a>
                         </div>
                     @endforeach
                 </div>
@@ -56,7 +54,6 @@
                             <h3 class="text-lg font-semibold">{{ $detail->product->name }}</h3>
                             <p class="text-gray-600">Qty: {{ $detail->quantity }}</p>
                             <p class="text-gray-600">Rp {{ number_format($detail->subtotal, 2) }}</p>
-                            <a href="{{ route('sales.details', $detail->sale_id) }}" class="text-blue-600">View Sale</a>
                         </div>
                     @endforeach
                 </div>
@@ -75,7 +72,6 @@
                             <h3 class="text-lg font-semibold">{{ $user->name }}</h3>
                             <p class="text-gray-600">{{ $user->email }}</p>
                             <p class="text-gray-600">{{ $user->role }}</p>
-                            <a href="{{ route('users.show', $user->id) }}" class="text-blue-600">View</a>
                         </div>
                     @endforeach
                 </div>

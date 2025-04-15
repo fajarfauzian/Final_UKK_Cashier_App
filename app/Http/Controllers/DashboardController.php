@@ -16,13 +16,22 @@ class DashboardController extends Controller
         $data = [];
 
         if ($user->role === 'petugas') {
+            $dailySales = Sale::whereDate('created_at', Carbon::today())->count();
+            $memberSales = Sale::whereDate('created_at', Carbon::today())
+                ->where('is_member', true)
+                ->get();
+            $nonMemberSales = Sale::whereDate('created_at', Carbon::today())
+                ->where('is_member', false)
+                ->get();
+
             $data = [
-                'dailySales' => Sale::whereDate('created_at', Carbon::today())->count(),
+                'dailySales' => $dailySales,
+                'memberSales' => $memberSales,
+                'nonMemberSales' => $nonMemberSales,
                 'lastUpdated' => Sale::whereDate('created_at', Carbon::today())->latest('updated_at')
                     ->first()?->updated_at?->format('d-m-Y H:i') ?? now()->format('d-m-Y H:i'),
             ];
-        } 
-        elseif ($user->role === 'admin') {
+        } elseif ($user->role === 'admin') {
             $totalSales = Sale::count();
             $data = [
                 'salesData' => $this->getSalesData(),
@@ -33,8 +42,7 @@ class DashboardController extends Controller
                         'percentage' => $totalSales > 0 ? ($product->sales_details_count / $totalSales) * 100 : 0,
                     ]),
             ];
-        }
-        else {
+        } else {
             $data = [
                 'totalProducts' => Product::count(),
                 'totalSales' => Sale::count(),

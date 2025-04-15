@@ -16,24 +16,21 @@
                     @csrf
                     <label for="stockInput" class="block text-sm font-medium text-gray-600">Stok</label>
                     <div class="relative mt-1">
-                        <input type="number" 
-                               name="stock" 
-                               id="stockInput"
-                               class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                               placeholder="Jumlah stok"
-                               required>
+                        <input type="number" name="stock" id="stockInput"
+                            class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                            placeholder="Jumlah stok" required>
                         <span class="iconify h-5 w-5 text-gray-400 absolute right-2 top-2.5"
-                              data-icon="mdi:warehouse"></span>
+                            data-icon="mdi:warehouse"></span>
                     </div>
                 </form>
             </div>
             <div class="p-5 flex justify-end gap-3">
                 <button onclick="closeStockModal()"
-                        class="px-4 py-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium">
+                    class="px-4 py-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 font-medium">
                     Batal
                 </button>
                 <button id="saveStockButton"
-                        class="px-4 py-2 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-medium">
+                    class="px-4 py-2 rounded-lg text-white bg-teal-600 hover:bg-teal-700 font-medium">
                     Simpan
                 </button>
             </div>

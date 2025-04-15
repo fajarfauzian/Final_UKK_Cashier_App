@@ -10,10 +10,17 @@ class SalesExport implements FromCollection, WithHeadings
 {
     public function collection()
     {
-        return Sale::with('user', 'salesDetails')->get()->map(function ($sale) {
+        return Sale::with(['user', 'salesDetails.product'])->get()->map(function ($sale) {
+            $products = $sale->salesDetails->map(function ($detail) {
+                $productName = $detail->product ? $detail->product->name : 'Unknown Product';
+                $unit_price = $detail->product && $detail->product->unit_price ? $detail->product->unit_price : 'N/A';
+                return "{$productName} (x{$detail->quantity} {$unit})";
+            })->implode(', ');
+
             return [
                 'ID' => $sale->id,
                 'Nama Pelanggan' => $sale->is_member && $sale->customer_name ? $sale->customer_name : 'NON-MEMBER',
+                'Produk' => $products ?: 'No Products',
                 'Tanggal Penjualan' => $sale->created_at->format('d-m-Y H:i'),
                 'Total Harga' => 'Rp ' . number_format($sale->total_price, 0, ',', '.'),
                 'Jumlah Dibayar' => 'Rp ' . number_format($sale->amount_paid, 0, ',', '.'),
@@ -28,6 +35,7 @@ class SalesExport implements FromCollection, WithHeadings
         return [
             'ID',
             'Nama Pelanggan',
+            'Produk',
             'Tanggal Penjualan',
             'Total Harga',
             'Jumlah Dibayar',

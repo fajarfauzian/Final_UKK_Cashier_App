@@ -5,7 +5,8 @@
             <p class="mt-2">Yakin ingin menghapus produk: <span id="deleteProductName" class="font-medium"></span>?</p>
             <div class="mt-4 flex justify-end gap-2">
                 <button onclick="closeDeleteModal()" class="px-3 py-1 border rounded">Batal</button>
-                <button type="button" onclick="deleteProduct()" class="px-3 py-1 bg-red-600 text-white rounded">Hapus</button>
+                <button type="button" onclick="deleteProduct()"
+                    class="px-3 py-1 bg-red-600 text-white rounded">Hapus</button>
             </div>
         </div>
     </div>

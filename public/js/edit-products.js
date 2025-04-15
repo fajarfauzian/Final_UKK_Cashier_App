@@ -1,4 +1,4 @@
- // Enhance image preview interactivity
+ // Enhance 
  document.getElementById('image').addEventListener('change', function(e) {
     const uploadText = document.getElementById('upload-text');
     const imagePreview = document.getElementById('image-preview');

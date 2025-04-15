@@ -21,10 +21,10 @@ class SalesDetailController extends Controller
             'unit_price' => 'sometimes|required|numeric|min:0',
             'quantity' => 'sometimes|required|integer|min:1',
         ]);
-
         $oldQuantity = $salesDetail->quantity;
 
         if (isset($validated['quantity']) || isset($validated['unit_price'])) {
+
             $validated['subtotal'] = ($validated['unit_price'] ?? $salesDetail->unit_price)
                 * ($validated['quantity'] ?? $salesDetail->quantity);
         }

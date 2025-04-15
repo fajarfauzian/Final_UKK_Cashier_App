@@ -12,6 +12,7 @@ document.getElementById('image').addEventListener('change', function(e) {
     }
 });
 
+
 document.getElementById('price_display').addEventListener('input', function() {
     let value = this.value.replace(/\D/g, '');
     let number = parseInt(value) || 0;

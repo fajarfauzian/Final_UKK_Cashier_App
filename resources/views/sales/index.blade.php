@@ -53,7 +53,8 @@
                                 {{ $sale->is_member && $sale->customer_name ? $sale->customer_name : 'NON-MEMBER' }}</td>
                             <td class="p-3">{{ $sale->created_at->format('d-m-Y') }}</td>
                             <td class="p-3 text-left">Rp {{ number_format($sale->total_price, 0, ',', '.') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-left">Rp {{ number_format($sale->change, 0, ',', '.') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-left">Rp
+                                {{ number_format($sale->change, 0, ',', '.') }}</td>
                             <td class="p-3">{{ $sale->user?->name }}</td>
                             <td class="p-3 text-center">
                                 <div class="flex justify-center gap-2">

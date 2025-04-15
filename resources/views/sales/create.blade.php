@@ -5,7 +5,7 @@
 @section('content')
     <div class="container w-full pb-28">
         <div class="max-w-7xl mx-auto">
-            <!-- Access Denied Alert -->
+            <!-- Peringatan Akses Ditolak -->
             @if (auth()->user()->role !== 'petugas')
                 <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-center mb-6">
                     <span class="iconify h-6 w-6 text-red-500 mr-3" data-icon="ri:error-warning-fill" data-width="24"

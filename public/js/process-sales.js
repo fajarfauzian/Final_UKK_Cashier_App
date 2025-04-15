@@ -17,7 +17,7 @@ document.getElementById('customer_name').addEventListener('input', function() {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': token, // Tambahkan CSRF token secara eksplisit
+                'X-CSRF-TOKEN': token,
             },
             body: JSON.stringify({
                 customer_name: customerName,

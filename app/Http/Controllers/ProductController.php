@@ -8,25 +8,15 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
-    public function __construct(protected AuthController $authController)
-    {
-        $this->middleware('auth');
-        $this->middleware(function ($request, $next) {
-            return Auth::user()->role === 'admin' 
-                ? $next($request) 
-                : redirect()->route('dashboard')->with('error', 'Anda tidak memiliki izin untuk mengakses halaman ini.');
-        })->except(['index', 'show']);
-    }
-
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 5);
         $search = $request->input('search');
-    
+
         $products = Product::when($search, fn($query) => $query->where('name', 'like', "%{$search}%"))
             ->paginate($perPage)
             ->appends(['perPage' => $perPage, 'search' => $search]);
-    
+        
         return view('products.index', compact('products'));
     }
 
@@ -38,7 +28,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validateProduct($request);
-        
+
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('products', 'public');
         }
@@ -50,7 +40,7 @@ class ProductController extends Controller
     public function select(Request $request)
     {
         $product = Product::find($request->product_id);
-        return $product 
+        return $product
             ? response()->json($product)
             : response()->json(['message' => 'Produk tidak ditemukan'], 404);
     }
@@ -80,7 +70,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $validated = $this->validateProduct($request, false);
-        
+
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('products', 'public');
         }
