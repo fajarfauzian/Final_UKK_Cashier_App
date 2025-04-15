@@ -11,10 +11,9 @@ class SalesExport implements FromCollection, WithHeadings
     public function collection()
     {
         return Sale::with(['user', 'salesDetails.product'])->get()->map(function ($sale) {
+            // Aggregate product names and quantities
             $products = $sale->salesDetails->map(function ($detail) {
-                $productName = $detail->product ? $detail->product->name : 'Unknown Product';
-                $unit_price = $detail->product && $detail->product->unit_price ? $detail->product->unit_price : 'N/A';
-                return "{$productName} (x{$detail->quantity} {$unit})";
+                return $detail->product ? "{$detail->product->name} (x{$detail->quantity})" : 'Unknown Product';
             })->implode(', ');
 
             return [
