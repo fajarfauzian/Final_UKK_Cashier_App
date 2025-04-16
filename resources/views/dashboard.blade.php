@@ -15,13 +15,13 @@
 
                 @if (auth()->user()->role === 'petugas')
                     <div class="bg-white rounded-lg shadow p-4 flex items-center">
-                        <div class="bg-green-100 rounded-full p-2 mr-3">
+                        <div class="bg-green-100 rounded-full p-2 mr-4">
                             <i class="ri-shopping-cart-line text-green-600 text-xl"></i>
                         </div>
                         <div>
                             <h4 class="text-sm font-semibold text-gray-700">Total Penjualan Hari Ini</h4>
                             <p class="text-2xl font-bold">{{ $dailySales ?? 0 }}</p>
-                            <span class="text-xs text-gray-500">{{ now()->format('d M Y H:i') }}</span>
+                            <span class="text-xs text-gray-500">{{ now()->format('d M Y') }}</span>
                         </div>
                         <div class="ml-4">
                             <table class="table-auto">

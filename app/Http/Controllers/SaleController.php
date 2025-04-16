@@ -14,41 +14,35 @@ use Illuminate\Support\Facades\Log;
 
 class SaleController extends Controller
 {
-
     public function index(Request $request)
-{
-    $perPage = $request->query('per_page', 10);
-    $search = $request->query('search');
-    $query = Sale::with(['user', 'salesDetails.product'])->orderBy('id', 'desc');
+    {
+        $perPage = $request->query('per_page', 10);
+        $search = $request->query('search');
+        $query = Sale::with(['user', 'salesDetails.product'])->orderBy('id', 'desc');
 
-    if ($search) {
-        $query->where(function ($q) use ($search) {
-            $q->where('id', 'like', "%{$search}%")
-              ->orWhere('customer_name', 'like', "%{$search}%")
-              ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"))
-              ->orWhere('total_price', 'like', "%{$search}%")
-              ->orWhere('created_at', 'like', "%{$search}%");
-        });
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('total_price', 'like', "%{$search}%")
+                    ->orWhere('created_at', 'like', "%{$search}%");
+            });
+        }
+
+        $dailySales = Sale::whereDate('created_at', today())->count();
+        $memberSales = Sale::whereDate('created_at', today())
+            ->where('is_member', true)
+            ->get();
+        $nonMemberSales = Sale::whereDate('created_at', today())
+            ->where('is_member', false)
+            ->get();
+
+        $sales = $query->paginate($perPage);
+        $startNumber = ($sales->currentPage() - 1) * $perPage + 1;
+
+        return view('sales.index', compact('sales', 'startNumber', 'dailySales', 'memberSales', 'nonMemberSales'));
     }
-
-    $dailySales = Sale::whereDate('created_at', today())->count();
-    $memberSales = Sale::whereDate('created_at', today())
-        ->where('is_member', true)
-        ->get();
-    $nonMemberSales = Sale::whereDate('created_at', today())
-        ->where('is_member', false)
-        ->get();
-
-    $sales = $query->paginate($perPage);
-    $startNumber = ($sales->currentPage() - 1) * $perPage + 1;
-
-    // Perbaiki view untuk mengarah ke sales.index
-    return view('sales.index', compact('sales', 'startNumber', 'dailySales', 'memberSales', 'nonMemberSales'));
-}
-
-
-
-
 
     public function details($id)
     {
@@ -61,7 +55,9 @@ class SaleController extends Controller
         $products = Product::withSum('salesDetails as sold', 'quantity')
             ->where('stock', '>', 0)
             ->get()
-            ->map(fn($product) => tap($product, function($p) { $p->quantity = 1; }));
+            ->map(fn($product) => tap($product, function ($p) {
+                $p->quantity = 1;
+            }));
 
         return view('sales.create', [
             'products' => $products,
